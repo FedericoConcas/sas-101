@@ -11,6 +11,16 @@
         - [Merge](#merge)
         - [Appending](#appending)
     - [Outputting subsets](#outputting-subsets)
+    - [Converting numeric to character and viceversa](#converting-numeric-to-character-and-viceversa)
+        - [PUT: Numeric to character](#put-numeric-to-character)
+        - [INPUT: Character to numeric](#input-character-to-numeric)
+    - [Data Cleaning](#data-cleaning)
+        - [UPCASE() and LOWCASE() : convert all characters to upper or lower-case](#upcase-and-lowcase--convert-all-characters-to-upper-or-lower-case)
+    - [Substring](#substring)
+    - [Scan](#scan)
+    - [Tranwrd()](#tranwrd)
+    - [Compress](#compress)
+    - [Concatenation](#concatenation)
 - [Variables](#variables)
     - [Variable Names](#variable-names)
         - [Rules for variable names:](#rules-for-variable-names)
@@ -29,14 +39,21 @@
     - [proc format](#proc-format)
     - [Applying formats](#applying-formats)
         - [Formats already built in SAS](#formats-already-built-in-sas)
+            - [Numeric formats:](#numeric-formats)
+            - [Character formats:](#character-formats)
+            - [Date and time formats:](#date-and-time-formats)
     - [proc print](#proc-print)
     - [Labels](#labels)
     - [proc copy](#proc-copy)
     - [proc sort](#proc-sort)
+    - [proc univariate (for examining distributions)](#proc-univariate-for-examining-distributions)
+    - [proc SGPLOT](#proc-sgplot)
 - [Macros](#macros)
 - [ODS](#ods)
+- [SQL](#sql)
 - [Extra](#extra)
     - [Comments in SAS](#comments-in-sas)
+    - [The log](#the-log)
 
 ## Important Tips
 * SAS is case insensitive, so it's the same to do `proc contents` and
@@ -279,6 +296,201 @@ data australia_sales2;
 	if country in ("au" "AU") or country = . then delete;
 run;
 ``
+## Converting numeric to character and viceversa
+### PUT: Numeric to character
+
+```sas
+data example_dsn1;
+	set example_dsn1;
+	id2 = put(id, 3.);
+run;
+* 3. is the format to be used;
+```
+The new character variable is left-justified with leading spaces.
+Stripping out white space could be vital for ensuring a correct merge.  “     1” is not the same as “1”. 
+To convert without leading spaces:
+
+```sas
+data convert_ex;
+	set convert_ex;
+	id2 = strip(put(id, 3.));
+run;
+```
+This picture shows us how the numbers have been converted to characters. Look at the justification. ![](/resources/images/put.png)
+
+
+### INPUT: Character to numeric
+```
+data example_dsn1;
+	set example_dsn1;
+	weight2 = input(weight, best12.);
+run;
+*
+The informat relates to the appearance of the variable before conversion.  For ‘standard’ numbers, best12. (or bestw.) is usually sufficient.
+;
+```
+Other informats are:
+![](resources/images/input.png)
+
+## Data Cleaning
+### UPCASE() and LOWCASE() : convert all characters to upper or lower-case
+
+```
+data males;
+	set alldata;
+	if upcase(sex) = 'MALE' then output;
+run;
+
+data males;
+	set alldata;
+	if lowcase(sex) = ‘male' then output;
+run;
+```
+or
+```
+data males;
+	set alldata;
+	if upcase(sex) ^= 'MALE' then delete;
+run;
+```
+
+
+Let's say our tables don't display properly because there are lower-case elements etc.
+```
+data alldata;
+	set alldata;
+	sex = lowcase(sex);
+run;
+
+proc freq data = alldata;
+	table sex;
+run;
+```
+## Substring
+Syntax: ``substrn(source, startposition, length)``
+To extract year of birth from dataframe:
+![](resources/images/substr.png)
+```data citizens;
+	set citizens;
+	yob = substrn(dob_char, 6, 4);
+run;
+```
+```
+data presidents;
+	set citizens;
+	if upcase(substrn(prez, 1, 1)) = "Y" then output;
+run;
+```
+NOTE: DO NOT USE `substr` but `substrn` as the former is better.
+
+## Scan
+Syntax: ``scan(var,n,’ ’)``
+
+```
+data citizens;
+	set citizens;
+	surname = scan(name, 1, ',');
+	forename = scan(name, -1, ' ');
+	keep name surname forename;
+run;
+
+*The third argument " " means to continue until there.
+```
+
+![](resources/images/scan.png)
+
+
+## Tranwrd()
+
+Syntax:  ``tranwrd(source, target, replacement)``
+
+```
+*This code replaces Sales with Selling in the Job_title column;
+
+data sales;
+	set orion.sales;
+	new_job_title = 
+		tranwrd(job_title, 'Sales', 'Selling');
+run;
+```
+## Compress
+Compress either:
+- removes certain (specified) characters from a character string
+- removes certain types of characters (when one or more modifiers are used)
+- if no characters are specified, removes spaces
+
+![](resources/images/compress1.png)
+
+```
+data telephone;
+	set mylib.telephone;
+	newnum = compress(number);
+run;
+*Since variable is the only argument, it removes all spaces;
+```
+![](resources/images/compress2.png)
+
+```
+data telephone;
+	set mylib.telephone;
+	newnum = compress(number, "()");
+run;
+
+*It removes everything within the quote marks.;
+```
+![](resources/images/compress3.png)
+
+
+The following:
+``newnum = compress(number, "() ");`` would remove all curved brackets and blank spaces.
+
+``newnum = compress(number, , 'kd');`` would remove all characters and only keep the numeric.
+
+Modifiers:
+
+Modifier | Function
+---------|---------
+a | Remove all upper and lower case characters from string
+ak | Keep only alphabetic characters from string
+kd | Keep only numeric characters
+d | Remove numeric values
+i | Remove specified characters both upper and lower case
+k | Keep the specified characters instead of deleting them
+l | Remove lower case characters
+p | Remove punctuation
+s | Remove spaces (default)
+u | Remove uppercase characters
+
+
+## Concatenation
+Function | Explanation
+------- | -------
+cat() | Concatenates character strings without removing leading or trailing blanks
+catx() | Concatenates character strings, removes leading and trailing blanks, and inserts separators
+catt() | Concatenates character strings and removes trailing blanks
+cats() | Concatenates character strings and removes leading and trailing blanks, no separators
+
+```
+data shipping_notes;
+	set orion.shipped;
+	length comment $21;
+	comment = cat('Shipped on ', put(ship_date, mmddyy10.));
+	total = quantity * input(price, dollar7.2);
+	format quantity words.;
+run;
+
+*\ 
+Saves new dataset in work library called shipping_notes.
+Reads dataset from orion library called shipped.
+Sets length of new variable called comment to 21 characters.
+Concatenates ‘Shipped on ‘ and the ship_date (after converting to character with put function using mmddyy10. format) keeping leading and trailing blanks and puts into new variable called comment.
+Calculates variable total which is equal to the variable quantity multiplied by the price (after converting to numeric using dollar7.2 informat).
+Includes format on the variable quantity using the format words.
+
+\*
+```
+
+
 
 ------------------------
 # Variables
@@ -445,6 +657,15 @@ proc means data = mylib.dataset_example min max mean clm maxdec = 1;
 run;
 ```
 
+Confidence interval for a parameter.
+```
+proc means data = sales mean clm alpha=0.1;
+	var salary;
+run;
+```
+![](resources/images/CImeans.png)
+
+
 *Common errors:*
 proc means with a character variable:
 ```
@@ -504,10 +725,29 @@ To apply the format, use
 ``format variable fmt.;`` in e.g. a proc print.
 
 ### Formats already built in SAS
-w.			w.d
-best.		bestw.		bestw.d
-comma.		commaw.    	commaw.d
-dollar.		dollarw.	dollarw.d
+#### Numeric formats:
+**format**. |  | **Format**Widthofwholenumber.0decimals | **Format**Widthofwholenumber.nodecimals
+------- | ------- | ------- | -------
+w. |  |  | w.d
+best. (this show decimals)|  | bestw. |  | bestw.d
+comma. |  | commaw. |  | commaw.d
+dollar. |  | dollarw. | dollarw.d
+Note that the width includes the dot. *2.1* has a width of 3. If I styled *34.2* with a 2.1 format, I would get *34*.
+
+Clearly the width (the length of the whole number) has to be greater than the number of decimals, otherwise we get an error.
+
+#### Character formats:
+| format |
+|--------|
+| $w. |
+
+#### Date and time formats:
+SAS value | Format | We see
+----------|--------|-------
+20752 | date9. | 25Oct2016
+20752 | worddatx. | 25 October 2016
+57600 | timeampm9. | 4:00 PM
+57600 | time. | 16:00:00
 
 ------------------------
 
@@ -607,6 +847,132 @@ proc sort data = dataset2;
     by id;
 run;
 ```
+-----------------------
+
+## proc univariate (for examining distributions)
+![](resources/images/univariate.png)
+
+The following gives default histogram, boxplot and normal probability plot.
+```
+proc univariate data = orion.nonsales plots;
+	var salary;
+run;
+```
+
+To only get the histogram:
+```proc univariate data = orion.nonsales noprint;
+	histogram salary / nmidpoints = 5  href = 15000;
+run;
+
+*nmidpoints is the number of bins
+href is the reference line at 15000;
+```
+![](resources/images/hist.png)
+
+```
+proc univariate data = orion.sales noprint;
+	class gender;
+	histogram salary;
+run;
+```
+![](resources/images/classedhist.png)
+
+
+```
+proc sort data = orion.sales out = sales;
+	by gender;
+run;
+
+proc univariate data = sales noprint;
+	by gender;
+	histogram salary;
+run;
+
+*Sorts the data by gender, then produces a histogram of salary for each gender separately.  When using “by”, the dataset MUST be sorted by that variable or you will get an error.;
+```
+
+To get a PP plot (QQ PLOT?):
+```
+proc univariate data = orion.nonsales noprint;
+	ppplot salary;
+run;
+
+OR
+
+proc univariate data = orion.nonsales noprint;
+	var salary;
+	ppplot;
+run;
+
+```
+![](resources/images/ppplot.png)
+
+
+To get a confidence interval of some parameter:
+```
+proc univariate data = sales cibasic alpha = 0.1;
+	var salary;
+run;
+
+```
+![](resources/images/CI.png)
+
+
+Proc means also does it.
+
+------------------------
+## proc SGPLOT
+
+**Boxplot**
+```
+proc sgplot data = orion.sales;
+	vbox salary;
+	format salary dollar.;
+	label salary = 'Annual salary';
+run;
+
+*Returns a vertical boxplot;
+```
+
+``hbox`` for a horizontal boxplot.
+
+**Boxplot by groups**
+```
+proc sgplot data = orion.sales;
+	vbox salary / category = gender;
+	format salary dollar.;
+	label salary = 'Annual salary';
+run;
+*Returns vertical boxplots for each category, side by side;
+```
+![](resources/images/vbox.png)
+
+**Histogram**
+```
+proc sgplot data = orion.sales;
+	histogram salary/binwidth=15000;
+	xaxis label = 'Salary';
+	format salary dollar.;
+run;
+```
+
+
+Interesting macro:
+```
+%macro bplotstats(dsn, var, classvar);
+proc means data = &dsn maxdec = 2;
+	class &classvar;
+	var &var;
+run;
+
+proc sgplot data = &dsn;
+	vbox &var / category = &classvar;
+run;
+%mend;
+
+%bplotstats(orion.customer_dim, Customer_Age, Customer_Group);
+```
+
 ------------------------
 
 # Macros
@@ -619,6 +985,44 @@ run;
 
 %print_smokers(smoker=Yes, gender=female);
 ```
+
+
+```
+%macro sortid(dsn);
+ 	proc sort data = &dsn;
+		by employee_id;
+	run;
+%mend;
+
+%sortid(employee_addresses);
+
+*If you dont put the & before the variable, SAS doesn't know it's something to replace;
+```
+
+**Possible errors:**
+- mend% is missing
+- when you call the macro you specify more arguments
+- when you get confused between positional and keyword parameters
+
+Example:
+``%macro sortid2(dsn = rand, outdsn = randsort);``
+
+- [x]  %sortid2(dsn = consent, outdsn = outst);
+- [x] %sortid2(outdsn = outst); *Keyword parameters don't not need to be all specified*
+- [ ] %sortid2(rand, outsort); *must have = in the macro call* 
+- [x] %sortid2();
+
+You can have a mixture of positional and keyword parameters. 
+**Positional parameters must appear first!**
+
+```
+%macro sortid2(dsn, outdsn = randsort);
+ 	proc sort data = &dsn out = &outdsn;
+		by employee_id;
+	run;
+%mend;
+```
+
 
 ------------------------
 # ODS
@@ -700,7 +1104,168 @@ run;
 
 ods rtf close;
 ```
+------------------------
+# SQL
+Can be considerably more efficient than data steps!
+```
+proc sql;
+	select employee_id, employee_gender, salary
+	from orion.employee_payroll
+	where employee_gender = 'F'
+	order by salary desc;
+quit;
 
+```
+The queries follow a specific order:
+proc sql;
+    (create table as)
+	select
+	from 
+	where 
+	group by
+	having
+	order by;
+quit;
+
+```
+proc sql;
+	select *
+	from orion.order_fact
+	where employee_id ne 99999999
+	order by employee_id;
+quit;
+
+```
+
+```
+proc sql;
+	select *, sum(total_retail_price)
+	from orion.order_fact
+	where employee_id ne 99999999
+	order by employee_id;
+quit;
+
+*Create an extra column which contains the sum of the column total_retail_price;
+```
+
+```
+proc sql;
+	select *, sum(total_retail_price) as sumprice
+	from orion.order_fact
+	where employee_id ne 99999999
+	order by employee_id;
+quit;
+
+*ORDER BY does not affect calculated variables;
+
+proc sql;
+	select *, sum(total_retail_price) as sumprice
+	from orion.order_fact
+	where employee_id ne 99999999
+	group by employee_id;
+quit;
+
+*GROUP BY calculates variables based on the groups;
+```
+![](resources/images/groupby.png)
+
+
+
+**Create table creates a new dataset:**
+```
+proc sql;
+create table total_sales as
+	select employee_id, 
+sum(total_retail_price) label = "Total sales" format dollar. as sumprice
+	from orion.order_fact
+	where employee_id ne 99999999
+	group by employee_id;
+quit;
+```
+
+If you want to give a **label **or format (for example) to a variable, include this information next to the variable. For instance, if you want to include a label for employee_id, you would have
+
+``create table total_sales as select employee_id label = “Example”,``
+
+```
+proc sql;
+create table profit as
+	select employee_id, quantity, total_retail_price, costprice_per_unit, total_retail_price - (CostPrice_Per_Unit*Quantity) as profit
+	from orion.order_fact
+	where employee_id ne 99999999;
+quit;
+
+```
+
+**Dropping variables:**
+```
+proc sql;
+create table profit(keep = employee_id) as
+select employee_id, total_retail_price - (CostPrice_Per_Unit*Quantity) as profit
+from orion.order_fact;
+quit;
+```
+If we used ``from orion.order_fact(keep = employee_id);`` we would have no variable to perform the calculations.
+
+**Errors:**
+The following will fail because you cannot use WHERE with variables that are created inside proc sql.
+```proc sql;
+create table profit as
+	select employee_id, quantity, total_retail_price, costprice_per_unit, total_retail_price - (CostPrice_Per_Unit*Quantity) as profit, sum(calculated profit) as total_profit
+	from orion.order_fact
+	where employee_id ne 99999999 and calculated total_profit > 1000
+	group by employee_id;
+quit;
+```
+
+We need to use the HAVING CALCULATED clause instead.
+```
+proc sql;
+
+create table profit as
+	select employee_id, quantity, total_retail_price, costprice_per_unit, total_retail_price - (CostPrice_Per_Unit*Quantity) as profit, sum(calculated profit) as total_profit
+	from orion.order_fact
+	where employee_id ne 99999999
+	group by employee_id
+	having calculated total_profit > 1000;
+
+create table profit_unique as
+	select distinct employee_id,  total_profit
+	from profit;
+
+quit;
+```
+
+**Using SQL to count:**
+```
+proc sql;
+   select count(*) as Count
+      from orion.Employee_Payroll
+      where Employee_Term_Date is missing;
+quit;
+```
+![](resources/images/count.png)
+
+
+
+```
+proc sql;
+create table multiple_sales as 
+	select employee_id, count(*) as count
+	from order_fact
+	where employee_id ne 99999999
+	group by employee_id
+	having count >= 2
+	order by count desc;
+quit;
+
+
+*
+exclude ID 99999999
+output the query result to a table, 
+and order by number of sales records (highest first)
+;
+```
 ------------------------
 
 # Extra
@@ -714,4 +1279,15 @@ Comments are useful to keep your code readable
 or 
 ```
 /* My comment */
+```
+
+## The log
+```sas
+filename prlog "C:\Users\bmd12s\Desktop\SAS\logs\SASlog_Example.txt";
+
+proc printto log = prlog new; run; 
+
+                YOUR PROGRAM
+
+proc printto; run; 
 ```
