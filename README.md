@@ -809,7 +809,8 @@ run;
 ```
 
 ```
-*Proc means has the title of the previous procedure. We need to reset title; ;
+*Proc means has the title of the previous procedure. We need to reset title;
+
 proc print data = orion.sales(obs = 5);
 	var employee_id first_name last_name salary;
 	title1 "Names and salaries of ORION employees";
