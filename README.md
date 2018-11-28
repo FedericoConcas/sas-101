@@ -748,6 +748,7 @@ w. |  |  | w.d
 best. (this show decimals)|  | bestw. |  | bestw.d
 comma. |  | commaw. |  | commaw.d
 dollar. |  | dollarw. | dollarw.d
+
 Note that the width includes the dot. *2.1* has a width of 3. If I styled *34.2* with a 2.1 format, I would get *34*.
 
 Clearly the width (the length of the whole number) has to be greater than the number of decimals, otherwise we get an error.
