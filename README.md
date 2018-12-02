@@ -1133,7 +1133,7 @@ run;
 ods pdf close;
 ```
 
-``ods pdf file="file.pdf" STYLE=monochromeprinter;`` will use a nice style for the pace.
+``ods pdf file="file.pdf" STYLE=monochromeprinter;`` will use a nice style for the page.
 
 ``ods pdf file="file.pdf" style = monochromeprinter;
 title1 height=12PT j=LEFT f=ARIAL "Sending to PDF";`` will left-justify.
@@ -1243,7 +1243,7 @@ sum(total_retail_price) label = "Total sales" format dollar. as sumprice
 quit;
 ```
 
-If you want to give a **label **or format (for example) to a variable, include this information next to the variable. For instance, if you want to include a label for employee_id, you would have
+If you want to give a **label** or format (for example) to a variable, include this information next to the variable. For instance, if you want to include a label for employee_id, you would have
 
 ``create table total_sales as select employee_id label = “Example”,``
 
@@ -1364,11 +1364,11 @@ All models have underlying assumptions. If you don’t know them, you cannot che
 Used to compare means. 
 
 Either to test:
-- whether the mean of your population is different to a specific value (one-sample t-test)
+- whether the mean of your population is different than a specific value (one-sample t-test)
 - whether two populations have different means (two-sample t-test)
 
 ### One-sample t-test
-Question: Is the population mean house sale different to $135,000?
+Question: Is the population mean house sale different than $135,000?
 ```
 *Plots(only) suppresses graphs;
 
